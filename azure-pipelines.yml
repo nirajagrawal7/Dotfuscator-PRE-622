@@ -35,10 +35,16 @@ steps:
   env:
     NUGET_RESTORE_MSBUILD_ARGS: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir"'
 
+# List files to verify the correct path
+- script: |
+    echo "Listing files in $(Build.SourcesDirectory)"
+    ls -R $(Build.SourcesDirectory)
+  displayName: 'List Files'
+
 # Build Xamarin Android project with Dotfuscator MSBuild Arguments
 - task: XamarinAndroid@1
   inputs:
-    projectFile: 'SimpleBlog/SimpleBlog.Android/SimpleBlog.Android.csproj'
+    projectFile: 'SimpleBlog/SimpleBlog.Android/SimpleBlog.Android.csproj'  # Path as confirmed by the file listing step
     outputDirectory: '$(outputDirectory)'
     configuration: '$(buildConfiguration)'
     msbuildArguments: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir" /p:DotfuscatorLicense="$(Dotfuscator_License)"'
