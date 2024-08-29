@@ -38,7 +38,7 @@ steps:
 # Build Xamarin Android project with Dotfuscator MSBuild Arguments
 - task: XamarinAndroid@1
   inputs:
-    projectFile: '**/*Android*.csproj'
+    projectFile: '**/SimpleBlog.Android.csproj'
     outputDirectory: '$(outputDirectory)'
     configuration: '$(buildConfiguration)'
     msbuildArguments: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir" /p:DotfuscatorLicense="$(Dotfuscator_License)"'
