@@ -27,13 +27,16 @@ steps:
     command: 'custom'
     arguments: 'install PreEmptive.Protection.Dotfuscator.Pro -OutputDirectory $(Agent.TempDirectory) -PreRelease -x -Source https://pkgs.dev.azure.com/nirajagrawal886/PRE622/_packaging/DotfuscatorFeed/nuget/v3/index.json'
 
-# Install Android SDK Platform API 30
-- script: |
-    echo "Installing Android SDK Platform API 30..."
-    sdkmanager "platforms;android-30" "build-tools;30.0.0"
-  displayName: 'Install Android SDK Platform API 30'
-  env:
-    ANDROID_HOME: /Users/runner/Library/Android/sdk
+# Install Android SDK Command Line Tools
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+      curl -o commandlinetools-mac.zip https://dl.google.com/android/repository/commandlinetools-mac-8512546_latest.zip
+      unzip -q commandlinetools-mac.zip -d "$ANDROID_HOME/cmdline-tools/latest"
+      yes | "$ANDROID_HOME/cmdline-tools/latest/cmdline-tools/bin/sdkmanager" --licenses
+      "$ANDROID_HOME/cmdline-tools/latest/cmdline-tools/bin/sdkmanager" "platform-tools" "platforms;android-30" "build-tools;30.0.0"
 
 # Restore the solution packages
 - task: NuGetCommand@2
