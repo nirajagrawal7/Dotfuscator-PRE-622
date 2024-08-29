@@ -27,6 +27,14 @@ steps:
     command: 'custom'
     arguments: 'install PreEmptive.Protection.Dotfuscator.Pro -OutputDirectory $(Agent.TempDirectory) -PreRelease -x -Source https://pkgs.dev.azure.com/nirajagrawal886/PRE622/_packaging/DotfuscatorFeed/nuget/v3/index.json'
 
+# Install Android SDK Platform API 30
+- script: |
+    echo "Installing Android SDK Platform API 30..."
+    sdkmanager "platforms;android-30" "build-tools;30.0.0"
+  displayName: 'Install Android SDK Platform API 30'
+  env:
+    ANDROID_HOME: /Users/runner/Library/Android/sdk
+
 # Restore the solution packages
 - task: NuGetCommand@2
   inputs:
@@ -35,19 +43,13 @@ steps:
   env:
     NUGET_RESTORE_MSBUILD_ARGS: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir"'
 
-# List files to verify the correct path
-- script: |
-    echo "Listing files in $(Build.SourcesDirectory)"
-    ls -R $(Build.SourcesDirectory)
-  displayName: 'List Files'
-
 # Build Xamarin Android project with Dotfuscator MSBuild Arguments
 - task: XamarinAndroid@1
   inputs:
-    projectFile: 'SimpleBlog.Android.csproj'  # Path as confirmed by the file listing step
+    projectFile: 'SimpleBlog/SimpleBlog.Android/SimpleBlog.Android.csproj'
     outputDirectory: '$(outputDirectory)'
     configuration: '$(buildConfiguration)'
-    msbuildArguments: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir" /p:DotfuscatorLicense="$(Dotfuscator_License)"'
+    msbuildArguments: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir" /p:DotfuscatorLicense="4824F7302305F68C9DE0B3EE2602AC63'
     jdkOption: 'JDKVersion'
 
 # Publish build artifacts to the pipeline
