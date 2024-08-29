@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE dotfuscatorSmartObfuscation SYSTEM "http://www.preemptive.com/dotfuscator/dtd/dotfuscatorSmartObfuscation_v1.0.dtd">
+<dotfuscatorSmartObfuscation version="1.0">
+    <header>
+        <timestamp>2024-08-20T17:09:18</timestamp>
+        <product version="7.1.2+5a5e44946b" user="latha@preemptive.com">PreEmptive Protection Dotfuscator Professional</product>
+    </header>
+    <smartdetails>
+        <detail warning="false">
+            <rule>LINQRule</rule>
+            <markeditem>
+                <itemtype>Property</itemtype>
+                <name>SimpleBlog.ViewModels.MainPageViewModel::SelectedBlog</name>
+            </markeditem>
+            <operation>was excluded</operation>
+            <component>from metadata stripping</component>
+            <reasons>
+                <reason>Property is referenced in an expression tree</reason>
+            </reasons>
+        </detail>
+    </smartdetails>
+</dotfuscatorSmartObfuscation>
