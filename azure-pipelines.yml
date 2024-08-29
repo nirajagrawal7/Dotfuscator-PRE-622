@@ -1,241 +1,56 @@
-# Mobile App Pipeline Template for IOS
-# Version 1.0 - Aditya
+# Xamarin.Android
+# Build a Xamarin.Android project.
+# Add steps that test, sign, and distribute an app, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/xamarin
 
-parameters:
-- name: 'RootSecureFile'
-  type: string
-- name: 'AppSettingSecureFile'
-  type: string
-- name: 'IosGooglesecureFile'
-  type: string
-- name: 'NotificationProvProfileSecureFile'
-  type: string
-- name: 'NotificationCertSecureFile'
-  type: string
-- name: 'EcosystemProvProfileSecureFile'
-  type: string
-- name: 'EcosystemCertSecureFile'
-  type: string
-- name: 'BuildConfiguration'
-  type: string
-- name: 'ServerEndpoint'
-  type: string
-- name: 'AppSlug'
-  type: string
-- name: 'DistributionGroupId'
-  type: string
-- name: 'ReleaseNotesInput'
-  type: string
-- name: 'VersionCode'
-  type: string
-- name: 'VersionName'
-  type: string
+trigger:
+- master
+
+pool:
+  vmImage: 'macos-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  outputDirectory: '$(build.binariesDirectory)/$(buildConfiguration)'
+
 steps:
-- checkout: self
-###########################################################################################################################################################
-
-- task: Bash@3
-  timeoutInMinutes: 180
-  displayName: 'Prepend Mono Framework to Patj'
-  inputs:
-    targetType: 'inline'
-    script: |
-      echo "##vso[task.prependpath]/Library/Frameworks/Mono.framework/Versions/6.12.0/bin"
-
-- task: Bash@3
-  timeoutInMinutes: 180
-  displayName: 'verify mono installation'
-  inputs:
-    targetType: 'inline'
-    script: |
-      mono --version
-
 - task: NuGetToolInstaller@1
-  timeoutInMinutes: 180
-  displayName: 'Install NuGet'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      curl -sSL https://dot.net/v1/dotnet-install.sh | bash
+      echo "##vso[task.prependpath]/Library/Frameworks/Mono.framework/Versions/6.4.0/bin"
 
 - task: NuGetCommand@2
-  timeoutInMinutes: 180
   inputs:
     command: 'custom'
-    arguments: 'install PreEmptive.Protection.Dotfuscator.Pro -OutputDirectory $(Agent.TempDirectory) -PreRelease -x -Source $(dotfuscator_endpoint)'
+    arguments: 'install PreEmptive.Protection.Dotfuscator.Pro -OutputDirectory $(Agent.TempDirectory) -PreRelease -x -Source https://pkgs.dev.azure.com/jbrawner/_packaging/jbrawner/nuget/v3/index.json'
+
 
 - task: NuGetCommand@2
-  timeoutInMinutes: 180
+  inputs:
+   command: 'restore'
+   restoreSolution: '**/*.sln'
+  env: { "NUGET_RESTORE_MSBUILD_ARGS": '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir"' }
+
+- task: XamarinAndroid@1
+  inputs:
+    projectFile: '**/*Android*.csproj'
+    outputDirectory: '$(outputDirectory)'
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir" /p:DotfuscatorLicense="$(Dotfuscator_License)"'
+    jdkOption: 'JDKVersion'
+
+- task: NuGetCommand@2
   inputs:
     command: 'restore'
     restoreSolution: '**/*.sln'
-  env: { "NUGET_RESTORE_MSBUILD_ARGS": '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir"' }
+    feedsToUse: 'select'
 
-- task: Bash@3
-  timeoutInMinutes: 180
-  displayName: 'Copy dotfuscator config'
+- task: PublishPipelineArtifact@1
   inputs:
-    filePath: 'devops/dotfuscator/ios.sh'
-
-###########################################################################################################################################################
-
-- task: ios-bundle-version@1
-  timeoutInMinutes: 180
-  displayName: 'Version  main project'
-  inputs:
-    sourcePath: './AnPostMobile/AnPostMobile/AnPostMoney.iOS/Info.plist'
-    versionCodeOption: 'buildid'
-    versionCode: '${{ parameters.VersionCode }}'
-    printFile: true
-    versionName: '${{ parameters.VersionName }}'
-
-- task: ios-bundle-version@1
-  timeoutInMinutes: 180
-  displayName: 'Version notifications extension project'
-  inputs:
-    sourcePath: './AnPostMobile/AnPostMobile.iOS.NotifServiceExtension/Info.plist'
-    versionCodeOption: 'buildid'
-    versionCode: '${{ parameters.VersionCode }}'
-    printFile: true
-    versionName: '${{ parameters.VersionName }}'
-
-- task: DownloadSecureFile@1
-  timeoutInMinutes: 180
-  name: root_plist
-  displayName: 'Download root.plist'
-  inputs:
-    secureFile: '${{ parameters.RootSecureFile }}'
-
-- task: Bash@3
-  timeoutInMinutes: 180
-  inputs:
-    targetType: 'inline'
-    script: |
-      echo "Copying root.plist"
-      cp $(root_plist.secureFilePath) './AnPostMobile/AnPostMobile/AnPostMoney.iOS/Settings.bundle/Root.plist'
-      echo "Copying completed"
-
-- task: DownloadSecureFile@1
-  timeoutInMinutes: 180
-  name: appsetting
-  displayName: 'Download appsettings'
-  inputs:
-    secureFile: '${{ parameters.AppSettingSecureFile }}'
-
-- task: Bash@3
-  timeoutInMinutes: 180
-  inputs:
-    targetType: 'inline'
-    script: |
-      echo "Copying appsetting.json"
-      cp $(appsetting.secureFilePath) './AnPostMobile/AnPostMobile/AnPostMobile/appsettings.json'
-      echo "Copying completed"
-
-- task: replacetokens@3
-  timeoutInMinutes: 180
-  displayName: Replace Tokens
-  inputs:
-    rootDirectory: './'
-    targetFiles: |
-      AnPostMobile/AnPostMobile/AnPostMobile/appsettings.json
-      AnPostMobile/AnPostMobile.iOS.NotifServiceExtension/Info.plist
-      AnPostMobile/AnPostMobile/AnPostMoney.iOS/Info.plist
-      AnPostMobile/AnPostMobile/AnPostMoney.iOS/Settings.bundle/Root.plist
-      AnPostMobile/AnPostMobile/AnPostMoney.iOS/Entitlements.plist
-    encoding: 'auto'
-    writeBOM: true
-    actionOnMissing: 'warn'
-    keepToken: false
-    tokenPrefix: '#{'
-    tokenSuffix: '}#'
-    useLegacyPattern: false
-    enableTransforms: false
-    enableTelemetry: false
-
-- task: DownloadSecureFile@1
-  timeoutInMinutes: 180
-  name: google_ios
-  displayName: 'Download GoogleService-Info.plist'
-  inputs:
-    secureFile: ${{ parameters.IosGooglesecureFile }}
-
-- task: Bash@3
-  timeoutInMinutes: 180
-  inputs:
-    targetType: 'inline'
-    script: |
-      echo "Copying google firbase config for IOS"
-      cp $(google_ios.secureFilePath) './AnPostMobile/AnPostMobile/AnPostMoney.iOS/GoogleService-Info.plist'
-      echo "Copying completed"
-      
-- task: NuGetToolInstaller@1
-  inputs:
-    versionSpec: '6.3.1'
-
-- task: NuGetCommand@2
-  timeoutInMinutes: 180
-  displayName: 'NuGet restore'
-  inputs:
-    restoreSolution: './AnPostMobile/AnPostMobile.sln'
-
-- task: InstallAppleProvisioningProfile@1
-  timeoutInMinutes: 180
-  displayName: 'Install Notification Extension provisioning profile'
-  inputs:
-    provProfileSecureFile: ${{ parameters.NotificationProvProfileSecureFile }}
-
-- task: InstallAppleCertificate@2
-  timeoutInMinutes: 180
-  displayName: 'Install Notification Extension certificate'
-  inputs:
-    certSecureFile: ${{ parameters.NotificationCertSecureFile }}
-    certPwd: '$(P12password)'
-  
-- task: InstallAppleProvisioningProfile@1
-  timeoutInMinutes: 180
-  displayName: 'Install Ecosystem provisioning profile'
-  inputs:
-    provProfileSecureFile: ${{ parameters.EcosystemProvProfileSecureFile }}
-
-- task: InstallAppleCertificate@2
-  timeoutInMinutes: 180
-  displayName: 'Install Ecosystem certificate'
-  inputs:
-    certSecureFile: ${{ parameters.EcosystemCertSecureFile }}
-    certPwd: '$(P12password)'
-    
-#- task: Bash@3
- # displayName: XamariniIos install
-  #inputs:
-   # targetType: 'inline'
-    #script: |
-     # dotnet tool install --global boots
-      #boots https://download.visualstudio.microsoft.com/download/pr/de7f727f-243c-4429-8773-eebd735eb1bb/da4a65f27ace7f805914ef63661e0efd/xamarin.ios-16.4.0.18.pkg
-
-- task: XamariniOS@2
-  timeoutInMinutes: 180
-  inputs:
-    solutionFile: './AnPostMobile/AnPostMobile/AnPostMoney.iOS/AnPostMobile.iOS.csproj'
-    configuration: '${{ parameters.BuildConfiguration }}'
-    packageApp: true
-    runNugetRestore: false
-    workingDirectory: './'
-    args: '/p:DotfuscatorMSBuildDir="$(Agent.TempDirectory)/PreEmptive.Protection.Dotfuscator.Pro/tools/msbuilddir" /p:DotfuscatorLicense="$(Dotfuscator_License)"'
-    timeoutInMinutes: 360
-    
-- task: CopyFiles@2
-  timeoutInMinutes: 180
-  displayName: 'Copy Files to $(Agent.TempDirectory)'
-  inputs:
-    SourceFolder: './'
-    Contents: '**/*.ipa'
-    TargetFolder: '$(Agent.TempDirectory)'
-
-- task: AppCenterDistribute@3
-  timeoutInMinutes: 180
-  displayName: 'Deploy ipa to Visual Studio App Center'
-  inputs:
-    serverEndpoint: ${{ parameters.ServerEndpoint }}
-    appSlug: ${{ parameters.AppSlug }}
-    appFile: '$(Agent.TempDirectory)/**/*.ipa'
-    symbolsIncludeParentDirectory: false
-    releaseNotesInput: ${{ parameters.ReleaseNotesInput }}
-    destinationType: 'groups'
-    distributionGroupId: ${{ parameters.distributionGroupId }}
-    isSilent: true
+    targetPath: '$(Pipeline.Workspace)'
+    artifact: 'Artifacts'
+    publishLocation: 'pipeline'
