@@ -32,11 +32,14 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+      mkdir -p "$ANDROID_HOME/cmdline-tools"
       curl -o commandlinetools-mac.zip https://dl.google.com/android/repository/commandlinetools-mac-8512546_latest.zip
-      unzip -q commandlinetools-mac.zip -d "$ANDROID_HOME/cmdline-tools/latest"
-      yes | "$ANDROID_HOME/cmdline-tools/latest/cmdline-tools/bin/sdkmanager" --licenses
-      "$ANDROID_HOME/cmdline-tools/latest/cmdline-tools/bin/sdkmanager" "platform-tools" "platforms;android-30" "build-tools;30.0.0"
+      unzip -q commandlinetools-mac.zip -d "$ANDROID_HOME/cmdline-tools"
+      mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+      yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+      "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-30" "build-tools;30.0.0"
+  displayName: 'Install Android SDK Command Line Tools and API 30'
+
 
 # Restore the solution packages
 - task: NuGetCommand@2
